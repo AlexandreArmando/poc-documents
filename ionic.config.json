@@ -1,5 +1,7 @@
 {
   "name": "poc-documents",
-  "integrations": {},
+  "integrations": {
+    "cordova": {}
+  },
   "type": "angular"
 }
