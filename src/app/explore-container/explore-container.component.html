@@ -1,6 +1,14 @@
 <div id="container">
   <strong>{{ name }}</strong>
-  <ion-button (click)="takePicture()" expand="block" fill="clear" shape="round">
+  <ion-button (click)="selectImages()" expand="block" fill="clear" shape="round">
     Take a photo
   </ion-button>
+  <h2>Saved images :</h2>
+  <h3 *ngIf="images.length == 0"></h3>
+  <ion-list *ngIf="images.length > 0">
+    <ion-item *ngFor="let img of images; index as pos">
+      <ion-img [src]="img.path"></ion-img>
+      <ion-label>{{ img.size }}</ion-label>
+    </ion-item>  
+  </ion-list>
 </div>
