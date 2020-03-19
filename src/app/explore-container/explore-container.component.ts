@@ -2,12 +2,15 @@ import { Component, OnInit, Input, ChangeDetectorRef } from '@angular/core';
 
 import { Camera, CameraOptions, PictureSourceType } from '@ionic-native/camera/ngx';
 import { ImageResizer, ImageResizerOptions } from '@ionic-native/image-resizer/ngx';
-import { File } from '@ionic-native/File/ngx';
+import { File, FileEntry } from '@ionic-native/File/ngx';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
 import { FilePath } from '@ionic-native/file-path/ngx';
 
 import { Platform, ActionSheetController } from '@ionic/angular';
 import { Storage } from '@ionic/storage';
+import { HttpClient } from '@angular/common/http';
+
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-explore-container',
@@ -20,6 +23,7 @@ export class ExploreContainerComponent implements OnInit {
   images = [];
   imageURI : string;
   STORAGE_KEY = 'stored_images';
+  loadingController: any;
   
   constructor(
     private camera: Camera, 
@@ -30,7 +34,8 @@ export class ExploreContainerComponent implements OnInit {
     private file : File,
     private filePath : FilePath,
     private actionSheetController : ActionSheetController,
-    private ref: ChangeDetectorRef
+    private ref: ChangeDetectorRef,
+    private http: HttpClient
     ) { }
   
   ngOnInit() {
@@ -61,6 +66,7 @@ export class ExploreContainerComponent implements OnInit {
     }
   }
 
+  // IMPORT --------------------------------------------------------
   async selectImages() {
     const actionSheet = await this.actionSheetController.create({
       header: "Select Image source",
@@ -99,6 +105,7 @@ export class ExploreContainerComponent implements OnInit {
             this.filePath.resolveNativePath(imagePath)
                 .then(filePath => {
                     let correctPath = filePath.substr(0, filePath.lastIndexOf('/') + 1);
+                    this.resizeImage(correctPath);
                     let currentName = imagePath.substring(imagePath.lastIndexOf('/') + 1, imagePath.lastIndexOf('?'));
                     this.copyFileToLocalDir(correctPath, currentName, this.createFileName());
                 });
@@ -166,9 +173,24 @@ export class ExploreContainerComponent implements OnInit {
     });
   }
 
-  resizePicture() {
+  deleteImages() {
+    
+    this.storage.get(this.STORAGE_KEY).then(images => {
+        this.storage.set(this.STORAGE_KEY, "");
+        for(let img of images) {
+          var correctPath = img.filePath.substr(0, img.filePath.lastIndexOf('/') + 1);
+          this.file.removeFile(correctPath, img.name).then(res => {
+            console.log('File removed.');
+            this.images.splice(img);
+          });
+        }
+    });
+  }
+
+  // RESIZE -----------------------------------------------------
+  resizeImage(img) {
     let options = {
-      uri: this.imageURI,
+      uri: img,
       folderName: 'Protonet',
       quality: 90,
       width: 1280,
@@ -182,6 +204,57 @@ export class ExploreContainerComponent implements OnInit {
         
         })
        .catch(e => console.log(e));
+  }
+
+  // UPLOAD -------------------------------------------------------------
+  startUpload(imgEntry) {
+    this.file.resolveDirectoryUrl(imgEntry.filePath).then( resolvedDirectory => {
+      this.file.getFile(resolvedDirectory,"" ,null)
+        .then(entry => {
+            (<FileEntry>entry).file(file => this.readFile(file))
+        })
+        .catch(err => {
+            this.presentToast('Error while reading file.');
+        });
+    })
+    
+  }
+  presentToast(arg0: string) {
+    throw new Error("Method not implemented.");
+  }
+  
+  readFile(file: any) {
+      const reader = new FileReader();
+      reader.onload = () => {
+          const formData = new FormData();
+          const imgBlob = new Blob([reader.result], {
+              type: file.type
+          });
+          formData.append('file', imgBlob, file.name);
+          this.uploadImageData(formData);
+      };
+      reader.readAsArrayBuffer(file);
+  }
+  
+  async uploadImageData(formData: FormData) {
+      const loading = await this.loadingController.create({
+          message: 'Uploading image...',
+      });
+      await loading.present();
+  
+      this.http.post("http://localhost:8888/upload.php", formData)
+          .pipe(
+              finalize(() => {
+                  loading.dismiss();
+              })
+          )
+          .subscribe(res => {
+              if (res['success']) {
+                  console.log('File upload complete.')
+              } else {
+                  console.log('File upload failed.')
+              }
+          });
   }
 
 }

@@ -1,3 +1,11 @@
 ion-content ion-toolbar {
   --background: translucent;
 }
+
+.row {
+  height: 100px;
+  .img {
+    width: 100px;
+    height: 90px;
+  }
+}
