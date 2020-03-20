@@ -105,7 +105,6 @@ export class Tab1Page implements OnInit {
                 .then(filePath => {
                     let correctPath = filePath.substr(0, filePath.lastIndexOf('/') + 1);
                     console.log("correctpath"+correctPath);
-                    //this.resizeImage(correctPath);
                     let currentName = imagePath.substring(imagePath.lastIndexOf('/') + 1, imagePath.lastIndexOf('?'));
                     this.copyFileToLocalDir(correctPath, currentName, this.createFileName());
                 });
@@ -197,36 +196,61 @@ export class Tab1Page implements OnInit {
   }
 
   // RESIZE -----------------------------------------------------
-  resizeImage(img) {
-    let options = {
-      uri: img,
-      folderName: 'Protonet',
-      quality: 90,
-      width: 1280,
-      height: 1280
-     } as ImageResizerOptions;
-     
-     this.resizer
-       .resize(options)
-       .then((filePath: string) => {
-         console.log('FilePath', filePath);
-        
-        })
-       .catch(e => console.log(e));
+  resizeImage(imgEntry, position) {
+
+    this.storage.get(this.STORAGE_KEY).then(images => {
+        let arr = JSON.parse(images);
+        let filtered = arr.filter(name => name != imgEntry.name);
+        this.storage.set(this.STORAGE_KEY, JSON.stringify(filtered));
+
+        var correctPath = imgEntry.filePath.substr(0, imgEntry.filePath.lastIndexOf('/') + 1);
+
+        let options = {
+          uri: imgEntry.filePath,
+          quality: 90,
+          width: 1280,
+          height: 1280
+         } as ImageResizerOptions;
+         
+         this.resizer
+           .resize(options)
+           .then((filePath: string) => {
+             console.log('FilePath', filePath);
+            })
+           .catch(e => console.log(e));
+        this.getSize(imgEntry);
+    });
+  }
+
+  // RESIZE -----------------------------------------------------
+  getSize(imgEntry) {
+
+    this.storage.get(this.STORAGE_KEY).then(images => {
+        let arr = JSON.parse(images);
+        let filtered = arr.filter(name => name != imgEntry.name);
+        this.storage.set(this.STORAGE_KEY, JSON.stringify(filtered));
+
+        var correctPath = imgEntry.filePath.substr(0, imgEntry.filePath.lastIndexOf('/') + 1);
+        console.log("1) "+imgEntry);
+        // 2) directory
+        console.log("2) "+imgEntry.filePath.substr(0, imgEntry.filePath.lastIndexOf('/') + 1));
+        // 3) filename
+        console.log("3) "+imgEntry.filePath.substr(imgEntry.filePath.lastIndexOf('/')+1, imgEntry.filePath.length));
+        this.startUpload(imgEntry);
+    });
   }
 
   // UPLOAD -------------------------------------------------------------
   startUpload(imgEntry) {
-    this.file.resolveDirectoryUrl(imgEntry.filePath).then( resolvedDirectory => {
-      this.file.getFile(resolvedDirectory,"" ,null)
-        .then(entry => {
-            (<FileEntry>entry).file(file => this.readFile(file))
-        })
-        .catch(err => {
-            console.log('Error while reading file.');
-        });
+    this.file.resolveDirectoryUrl(imgEntry.filePath.substr(0, imgEntry.filePath.lastIndexOf('/') + 1)).then( resolvedDirectory => {
+      resolvedDirectory.getFile(imgEntry.filePath.substr(imgEntry.filePath.lastIndexOf('/')+1, imgEntry.filePath.length), null, 
+      (fileEntry) => {
+        (<FileEntry>fileEntry).file(file => this.readFile(file));
+        
+        console.log("got file: " + fileEntry.fullPath);
+        
+      })
     })
-    
   }
   
   readFile(file: any) {
