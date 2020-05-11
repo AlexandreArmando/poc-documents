@@ -101,8 +101,7 @@ export class Tab1Page implements OnInit {
       destinationType: this.camera.DestinationType.DATA_URL,
       encodingType: this.camera.EncodingType.JPEG,
       mediaType: this.camera.MediaType.PICTURE,
-      sourceType: sourceType,
-      //targetWidth: 500
+      sourceType: sourceType
     };
 
   
