@@ -10,11 +10,15 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Camera } from '@ionic-native/camera/ngx';
 import { ImageResizer } from '@ionic-native/image-resizer/ngx';
 import { File } from '@ionic-native/File/ngx';
+import { FileOpener } from '@ionic-native/file-opener/ngx';
 import { WebView } from '@ionic-native/ionic-webview/ngx';
 import { FilePath } from '@ionic-native/file-path/ngx';
 import { HTTP } from '@ionic-native/http/ngx';
+import { DocumentViewer } from '@ionic-native/document-viewer/ngx';
 
 import { IonicStorageModule } from '@ionic/storage';
+
+import { NgxImageCompressService } from 'ngx-image-compress';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -38,7 +42,10 @@ import { from } from 'rxjs';
     HTTP,
     WebView,
     File,
+    FileOpener,
+    DocumentViewer,
     FilePath,
+    NgxImageCompressService,
     ActionSheetController,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
   ],
