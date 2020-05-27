@@ -9,8 +9,11 @@
 
 <ion-content>
 
-  <div>    
-    <h2>Saved images :</h2>
-    
+  <div>
+    <canvas id="preview" width="240" height="320"
+    style="border: 1px solid black;"></canvas>
   </div>
+  <ion-button (click)="base64ToPDF()" expand="block" fill="clear" shape="round">
+    Convert PDF
+  </ion-button>
 </ion-content>

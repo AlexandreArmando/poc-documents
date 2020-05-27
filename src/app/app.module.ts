@@ -15,6 +15,7 @@ import { WebView } from '@ionic-native/ionic-webview/ngx';
 import { FilePath } from '@ionic-native/file-path/ngx';
 import { HTTP } from '@ionic-native/http/ngx';
 import { DocumentViewer } from '@ionic-native/document-viewer/ngx';
+import { Base64 } from '@ionic-native/base64/ngx';
 
 import { IonicStorageModule } from '@ionic/storage';
 
@@ -22,7 +23,6 @@ import { NgxImageCompressService } from 'ngx-image-compress';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { from } from 'rxjs';
 
 @NgModule({
   declarations: [AppComponent],
@@ -45,6 +45,7 @@ import { from } from 'rxjs';
     FileOpener,
     DocumentViewer,
     FilePath,
+    Base64,
     NgxImageCompressService,
     ActionSheetController,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }

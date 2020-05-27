@@ -51,6 +51,7 @@
         <config-file parent="NSCameraUsageDescription" platform="ios" target="*-Info.plist">
             <string>We will use your camera</string>
         </config-file>
+        <preference name="CameraUsesGeolocation" value="false" />
         <allow-intent href="itms:*" />
         <allow-intent href="itms-apps:*" />
         <icon height="57" src="resources/ios/icon/icon.png" width="57" />
