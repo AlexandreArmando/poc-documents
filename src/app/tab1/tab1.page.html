@@ -11,9 +11,18 @@
 
   <div>
     <canvas id="preview" width="240" height="320"
-    style="border: 1px solid black;"></canvas>
+    style="border: 1px solid black;margin: 20px;"></canvas>
+  </div>
+  <div>
+    <span>PDF size : </span><span>{{ pdfSize }}</span>
   </div>
   <ion-button (click)="base64ToPDF()" expand="block" fill="clear" shape="round">
     Convert PDF
+  </ion-button>
+  <ion-button (click)="preview()" expand="block" fill="clear" shape="round">
+    Preview
+  </ion-button>
+  <ion-button (click)="send()" expand="block" fill="clear" shape="round">
+    Upload
   </ion-button>
 </ion-content>

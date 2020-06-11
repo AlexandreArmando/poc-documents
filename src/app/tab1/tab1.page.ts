@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ChangeDetectorRef } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 
 import {
   Camera,
@@ -10,18 +10,19 @@ import {
   ImageResizerOptions,
 } from "@ionic-native/image-resizer/ngx";
 import { File } from "@ionic-native/File/ngx";
-import { WebView } from "@ionic-native/ionic-webview/ngx";
 import { FileOpener } from '@ionic-native/file-opener/ngx';
-import { DocumentViewer } from '@ionic-native/document-viewer/ngx';
+import { FileTransfer, FileTransferObject } from '@ionic-native/file-transfer/ngx';
 import { Base64 } from '@ionic-native/base64/ngx';
 
-import { Const, WIDTH, HEIGHT } from '../const';
+import { WIDTH, HEIGHT } from '../const';
 
 import { Platform, ActionSheetController } from "@ionic/angular";
 import { Storage } from "@ionic/storage";
 
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { HTTP } from '@ionic-native/http/ngx';
+import { FileChooser } from '@ionic-native/file-chooser/ngx';
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 @Component({
@@ -34,23 +35,27 @@ export class Tab1Page implements OnInit {
   imgPath = '';
   loadedImage : HTMLImageElement;
   canvasRealSized: HTMLCanvasElement;
+  toSend = '';
+  fileTransfer: FileTransferObject;
+  pdfSize : number = 0;
 
   constructor(
     private camera: Camera,
     private resizer: ImageResizer,
     private platform: Platform,
-    private webView: WebView,
     //private storage: Storage,
     private file: File,
-    //private fileOpener: FileOpener,
+    private transfer: FileTransfer,
+    private fileOpener: FileOpener,
     private actionSheetController: ActionSheetController,
-    //private documentViewer: DocumentViewer,
-    private base64: Base64
+    private base64: Base64,
+    private fileChooser: FileChooser
   ) {}
 
   ngOnInit() {
     this.platform.ready().then(() => {
       console.log("ready");
+      this.fileTransfer = this.transfer.create();
     });
   }
 
@@ -72,6 +77,12 @@ export class Tab1Page implements OnInit {
           },
         },
         {
+          text: "Load from file",
+          handler: () => {
+            this.takePicture(this.camera.PictureSourceType.CAMERA);
+          },
+        },
+        {
           text: "Cancel",
           role: "cancel",
         },
@@ -80,43 +91,16 @@ export class Tab1Page implements OnInit {
     await actionSheet.present();
   }
 
-  // takePicture(sourceType: PictureSourceType) {
-  //   console.log("--- IN TAKE ---");
-  //   var options: CameraOptions = {
-  //     quality: 100,
-  //     destinationType: this.camera.DestinationType.DATA_URL,
-  //     encodingType: this.camera.EncodingType.JPEG,
-  //     mediaType: this.camera.MediaType.PICTURE,
-  //     sourceType: sourceType
-  //   };
+  // Android only
+  // Choose directly a pdf file
+  chooseFile() {
+    this.fileChooser.open()
+      .then(uri => console.log(uri))
+      // TODO : test if pdf + size
+      .catch(e => console.log(e));
+  }
 
-  
-  //   this.camera.getPicture(options).then((imageData) => {
-  //     pdfMake.vfs = pdfFonts.pdfMake.vfs;
-  //     let base64Image = 'data:image/jpeg;base64,' + imageData;
-  //     var docDefinition = {
-  //       pageSize: 'A4',
-  //       pageOrientation: 'portrait',
-  //       pageMargins: [ 0, 0, 0, 0 ],
-  //       content: [
-  //         {
-  //           image: 'document',
-  //           width: 500
-  //         },
-  //       ],
-  //       images: {
-  //         document: base64Image
-  //       }
-  //     }
-  //     this.pdfObj = pdfMake.createPdf(docDefinition);
-
-  //     this.pdfObj.getBuffer((buffer) => {
-  //       var blob = new Blob([buffer], { type: 'application/pdf' });
-  //       this.file.writeFile(this.file.externalDataDirectory, 'toSend.pdf', blob, { replace: true })
-  //     });
-  //   }) 
-  // }
-
+  // Take the picture from the camera or the gallery
   takePicture(sourceType: PictureSourceType) {
     var options: CameraOptions = {
       quality: 100,
@@ -135,6 +119,7 @@ export class Tab1Page implements OnInit {
     }) 
   }
 
+  // Get the orientation of the picture
   getOrientation(path: string) {
     this.fileToBase64(path).then((base64 : string) => {
       let tmpImg = new Image();
@@ -240,6 +225,7 @@ export class Tab1Page implements OnInit {
     }
   }
 
+  // Convert image file to base64
   async fileToBase64(imagePath : string) : Promise<string> {
     try {
       const base64File = await this.base64.encodeFile(imagePath);
@@ -252,6 +238,7 @@ export class Tab1Page implements OnInit {
     }
   }
 
+  // Convert base64 data to pdf file
   base64ToPDF() {
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
     let base64Image = this.canvasRealSized.toDataURL();
@@ -273,10 +260,49 @@ export class Tab1Page implements OnInit {
     this.pdfObj = pdfMake.createPdf(docDefinition);
     this.pdfObj.getBuffer((buffer: BlobPart) => {
       var blob = new Blob([buffer], { type: 'application/pdf' });
-      this.file.writeFile(this.file.externalDataDirectory, 'toSend.pdf', blob, { replace: true });
-      this.pdfObj = null;
-      this.imgPath = '';
-      this.loadedImage = null;
+      this.file.writeFile(this.file.externalDataDirectory, 'toSend.pdf', blob, { replace: true }).then( _ => this.getSize());
     });
+  }
+
+  preview() {
+    this.fileOpener.open(this.file.externalDataDirectory+'toSend.pdf', 'application/pdf')
+    .then(() => console.log('File is opened'))
+    .catch(e => console.log('Error opening file', e));
+  }
+
+  log(text: string) {
+    console.log(text);
+    return null;
+  }
+
+  // Check the size of the file
+  async getSize() {
+    try {
+      const fileEntry = await this.file.resolveLocalFilesystemUrl(this.file.externalDataDirectory + 'toSend.pdf');
+      console.log("Resolved file", fileEntry);
+      fileEntry.getMetadata(datas => {
+        console.log(datas.size / 1024 / 1024);
+        this.pdfSize = datas.size / 1024 / 1024;
+      });
+    }
+    catch (err) {
+      console.log('Error while reading file.' + err);
+    }
+  }
+
+  // Upload files
+  send() {
+    let options = {
+      fileKey: 'file',
+      fileName: "toSend.pdf",
+      headers: {}
+    }
+ 
+   this.fileTransfer.upload(this.file.externalDataDirectory+'toSend.pdf', 'https://dc4ad8bfc9df.ngrok.io', options)
+    .then((data) => {
+      console.log("Successfully uploaded :", data.response);
+    }, (err) => {
+      console.log("Successfully uploaded :", err.response);
+    })
   }
 }

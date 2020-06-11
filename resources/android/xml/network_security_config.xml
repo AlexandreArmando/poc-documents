@@ -3,4 +3,7 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
     </domain-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain>https://dc4ad8bfc9df.ngrok.io</domain>
+   </domain-config>
 </network-security-config>
